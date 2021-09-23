@@ -12,6 +12,7 @@ const routes = require("../routes");
 const {
   notFoundHandler,
 } = require("../handlers/routeHandlers/notFoundHandler");
+const { parseJSON } = require("../helpers/utilities");
 
 //module scalffolding
 const handler = {};
@@ -26,8 +27,8 @@ handler.handleRequestResponse = (req, res) => {
   const method = req.method.toLowerCase();
   const queryStringObject = parsedUrl.query;
 
-  const headers = req.headers;
-  console.log(headers);
+  const headersObject = req.headers;
+  // console.log(headers);
 
   const decoder = new StringDecoder("utf-8");
   let realData = "";
@@ -38,7 +39,7 @@ handler.handleRequestResponse = (req, res) => {
     trimmedPath,
     method,
     queryStringObject,
-    headers,
+    headersObject,
   };
 
   const chosenHandler = routes[trimmedPath]
@@ -51,6 +52,8 @@ handler.handleRequestResponse = (req, res) => {
 
   req.on("end", () => {
     realData += decoder.end();
+
+    requestProperties.body = parseJSON(realData)
     chosenHandler(requestProperties, (statusCode, payload) => {
       statusCode = typeof statusCode === "number" ? statusCode : 500;
       payload = typeof payload === "object" ? payload : {};
@@ -58,10 +61,11 @@ handler.handleRequestResponse = (req, res) => {
       const payloadString = JSON.stringify(payload);
 
       // return the final string
+
+      res.setHeader('Content-Type', 'application/json')
       res.writeHead(statusCode);
       res.end(payloadString);
     });
-    res.end("Hello World");
   });
 };
 
